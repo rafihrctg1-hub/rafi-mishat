@@ -1,0 +1,390 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOptionalId(id) {
+      return id is string && id.size() <= 128 && (id.size() == 0 || id.matches('^[a-zA-Z0-9_\\-]+$'));
+    }
+
+    function isNum(val) {
+      return (val is int || val is float);
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTimestampsOnCreate(data) {
+      return data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidTimestampsOnUpdate(data, prev) {
+      return data.createdAt == prev.createdAt &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 1. BusinessSettings Validation
+    function isValidBusinessSettings(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.businessName is string && data.businessName.size() >= 1 && data.businessName.size() <= 120 &&
+             data.businessAddress is string && data.businessAddress.size() <= 250 &&
+             data.businessPhone is string && data.businessPhone.size() <= 40 &&
+             data.currencySymbol is string && data.currencySymbol.size() >= 1 && data.currencySymbol.size() <= 10 &&
+             data.currencyCode is string && data.currencyCode.size() >= 1 && data.currencyCode.size() <= 10 &&
+             isNum(data.defaultCommissionRate) && data.defaultCommissionRate >= 0 && data.defaultCommissionRate <= 100 &&
+             data.commissionEnabled is bool &&
+             data.invoicePrefix is string && data.invoicePrefix.size() >= 1 && data.invoicePrefix.size() <= 20 &&
+             data.nextInvoiceSeq is int && data.nextInvoiceSeq >= 1 && data.nextInvoiceSeq <= 100000000 &&
+             data.defaultPrintFormat is string && data.defaultPrintFormat.size() <= 20 &&
+             data.defaultPrintFormat in ['A4', 'THERMAL_80MM'] &&
+             data.logoPreset is string && data.logoPreset.size() <= 40 &&
+             data.dateFormatPattern is string && data.dateFormatPattern.size() >= 1 && data.dateFormatPattern.size() <= 40 &&
+             data.useBengaliNumerals is bool &&
+             data.languagePref is string && data.languagePref.size() <= 10 &&
+             data.languagePref in ['BN', 'BN_EN'];
+    }
+
+    // 2. Product Validation
+    function isValidProduct(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.nameBn is string && data.nameBn.size() >= 1 && data.nameBn.size() <= 120 &&
+             data.nameEn is string && data.nameEn.size() <= 120 &&
+             data.iconKey is string && data.iconKey.size() >= 1 && data.iconKey.size() <= 40 &&
+             data.defaultUnit is string && data.defaultUnit.size() >= 1 && data.defaultUnit.size() <= 20 &&
+             isNum(data.defaultRate) && data.defaultRate >= 0 && data.defaultRate <= 10000000 &&
+             data.notes is string && data.notes.size() <= 300 &&
+             data.isActive is bool;
+    }
+
+    // 3. Customer Validation
+    function isValidCustomer(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+             data.phone is string && data.phone.size() <= 30 &&
+             data.address is string && data.address.size() <= 250 &&
+             data.notes is string && data.notes.size() <= 300 &&
+             data.isActive is bool;
+    }
+
+    // 4. Invoice Validation
+    function isValidInvoice(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.invoiceNumber is string && data.invoiceNumber.size() >= 1 && data.invoiceNumber.size() <= 60 &&
+             isOptionalId(data.customerId) &&
+             data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 120 &&
+             data.customerPhone is string && data.customerPhone.size() <= 30 &&
+             data.deliveryAddress is string && data.deliveryAddress.size() <= 250 &&
+             data.invoiceDateMillis is int && data.invoiceDateMillis > 0 &&
+             data.itemCount is int && data.itemCount >= 1 && data.itemCount <= 500 &&
+             isNum(data.totalQuantity) && data.totalQuantity > 0 && data.totalQuantity <= 100000000 &&
+             isNum(data.productSubtotal) && data.productSubtotal >= 0 && data.productSubtotal <= 1000000000 &&
+             data.commissionEnabled is bool &&
+             isNum(data.commissionRate) && data.commissionRate >= 0 && data.commissionRate <= 100 &&
+             isNum(data.commissionAmount) && data.commissionAmount >= 0 && data.commissionAmount <= 1000000000 &&
+             isNum(data.additionalCharges) && data.additionalCharges >= 0 && data.additionalCharges <= 1000000000 &&
+             isNum(data.discount) && data.discount >= 0 && data.discount <= 1000000000 &&
+             isNum(data.finalAmount) && data.finalAmount >= 0 && data.finalAmount <= 1000000000 &&
+             data.notes is string && data.notes.size() <= 500 &&
+             data.status is string && data.status.size() <= 20 &&
+             data.status in ['SAVED', 'PAID', 'DUE'] &&
+             data.businessNameSnapshot is string && data.businessNameSnapshot.size() >= 1 && data.businessNameSnapshot.size() <= 120 &&
+             data.businessAddressSnapshot is string && data.businessAddressSnapshot.size() <= 250 &&
+             data.businessPhoneSnapshot is string && data.businessPhoneSnapshot.size() <= 40;
+    }
+
+    // 5. InvoiceItem Validation
+    function isValidInvoiceItem(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             isValidId(data.invoiceId) &&
+             isOptionalId(data.productId) &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 120 &&
+             isNum(data.quantity) && data.quantity > 0 && data.quantity <= 10000000 &&
+             data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 20 &&
+             isNum(data.rate) && data.rate >= 0 && data.rate <= 10000000 &&
+             isNum(data.lineTotal) && data.lineTotal >= 0 && data.lineTotal <= 1000000000 &&
+             data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000 &&
+             data.invoiceDateMillis is int && data.invoiceDateMillis > 0;
+    }
+
+    // 6. Expense Validation
+    function isValidExpense(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.expenseDateMillis is int && data.expenseDateMillis > 0 &&
+             data.category is string && data.category.size() <= 30 &&
+             data.category in ['TRANSPORT', 'LABOR', 'LOADING', 'MARKET', 'PACKAGING', 'OTHER'] &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 200 &&
+             isNum(data.amount) && data.amount > 0 && data.amount <= 1000000000 &&
+             isOptionalId(data.relatedInvoiceId) &&
+             data.relatedInvoiceNumber is string && data.relatedInvoiceNumber.size() <= 60 &&
+             data.notes is string && data.notes.size() <= 300;
+    }
+
+    match /users/{userId} {
+      // Settings Collection
+      match /settings/{settingId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(settingId);
+        allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(settingId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'businessName', 'businessAddress', 'businessPhone',
+                           'currencySymbol', 'currencyCode', 'defaultCommissionRate', 'commissionEnabled',
+                           'invoicePrefix', 'nextInvoiceSeq', 'defaultPrintFormat', 'logoPreset',
+                           'dateFormatPattern', 'useBengaliNumerals', 'languagePref', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'businessName', 'businessAddress', 'businessPhone',
+                           'currencySymbol', 'currencyCode', 'defaultCommissionRate', 'commissionEnabled',
+                           'invoicePrefix', 'nextInvoiceSeq', 'defaultPrintFormat', 'logoPreset',
+                           'dateFormatPattern', 'useBengaliNumerals', 'languagePref', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidBusinessSettings(incoming()) &&
+                         isValidTimestampsOnCreate(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(settingId) &&
+                         isValidBusinessSettings(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         (
+                           // Action: UpdateSettingsOrIncrementCounter
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'businessName', 'businessAddress', 'businessPhone',
+                             'currencySymbol', 'currencyCode', 'defaultCommissionRate', 'commissionEnabled',
+                             'invoicePrefix', 'nextInvoiceSeq', 'defaultPrintFormat', 'logoPreset',
+                             'dateFormatPattern', 'useBengaliNumerals', 'languagePref', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(settingId) && existing().userId == request.auth.uid;
+      }
+
+      // Products Collection
+      match /products/{productId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(productId);
+        allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(productId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'nameBn', 'nameEn', 'iconKey', 'defaultUnit',
+                           'defaultRate', 'notes', 'isActive', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'nameBn', 'nameEn', 'iconKey', 'defaultUnit',
+                           'defaultRate', 'notes', 'isActive', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidProduct(incoming()) &&
+                         isValidTimestampsOnCreate(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(productId) &&
+                         isValidProduct(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         (
+                           // Action: EditProductDetailsOrStatus
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'nameBn', 'nameEn', 'iconKey', 'defaultUnit',
+                             'defaultRate', 'notes', 'isActive', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(productId) && existing().userId == request.auth.uid;
+      }
+
+      // Customers Collection
+      match /customers/{customerId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(customerId);
+        allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(customerId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'name', 'phone', 'address', 'notes',
+                           'isActive', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'name', 'phone', 'address', 'notes',
+                           'isActive', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidCustomer(incoming()) &&
+                         isValidTimestampsOnCreate(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(customerId) &&
+                         isValidCustomer(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         (
+                           // Action: EditCustomerDetailsOrStatus
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'name', 'phone', 'address', 'notes', 'isActive', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(customerId) && existing().userId == request.auth.uid;
+      }
+
+      // Invoices Collection
+      match /invoices/{invoiceId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(invoiceId);
+        allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(invoiceId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'invoiceNumber', 'customerId', 'customerName', 'customerPhone',
+                           'deliveryAddress', 'invoiceDateMillis', 'itemCount', 'totalQuantity',
+                           'productSubtotal', 'commissionEnabled', 'commissionRate', 'commissionAmount',
+                           'additionalCharges', 'discount', 'finalAmount', 'notes', 'status',
+                           'businessNameSnapshot', 'businessAddressSnapshot', 'businessPhoneSnapshot',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'invoiceNumber', 'customerId', 'customerName', 'customerPhone',
+                           'deliveryAddress', 'invoiceDateMillis', 'itemCount', 'totalQuantity',
+                           'productSubtotal', 'commissionEnabled', 'commissionRate', 'commissionAmount',
+                           'additionalCharges', 'discount', 'finalAmount', 'notes', 'status',
+                           'businessNameSnapshot', 'businessAddressSnapshot', 'businessPhoneSnapshot',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidInvoice(incoming()) &&
+                         isValidTimestampsOnCreate(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(invoiceId) &&
+                         isValidInvoice(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         (
+                           // Action: EditSavedInvoice
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'invoiceNumber', 'customerId', 'customerName', 'customerPhone',
+                             'deliveryAddress', 'invoiceDateMillis', 'itemCount', 'totalQuantity',
+                             'productSubtotal', 'commissionEnabled', 'commissionRate', 'commissionAmount',
+                             'additionalCharges', 'discount', 'finalAmount', 'notes', 'status',
+                             'businessNameSnapshot', 'businessAddressSnapshot', 'businessPhoneSnapshot',
+                             'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(invoiceId) && existing().userId == request.auth.uid;
+      }
+
+      // Invoice Items Collection
+      match /invoice_items/{itemId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(itemId);
+        allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(itemId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'invoiceId', 'productId', 'productName', 'quantity',
+                           'unit', 'rate', 'lineTotal', 'sortOrder', 'invoiceDateMillis',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'invoiceId', 'productId', 'productName', 'quantity',
+                           'unit', 'rate', 'lineTotal', 'sortOrder', 'invoiceDateMillis',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidInvoiceItem(incoming()) &&
+                         isValidTimestampsOnCreate(incoming()) &&
+                         existsAfter(/databases/$(database)/documents/users/$(userId)/invoices/$(incoming().invoiceId));
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(itemId) &&
+                         isValidInvoiceItem(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().invoiceId == existing().invoiceId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         (
+                           // Action: EditInvoiceItemLine
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'productId', 'productName', 'quantity', 'unit', 'rate',
+                             'lineTotal', 'sortOrder', 'invoiceDateMillis', 'updatedAt'
+                           ])
+                         ) &&
+                         existsAfter(/databases/$(database)/documents/users/$(userId)/invoices/$(incoming().invoiceId));
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(itemId) && existing().userId == request.auth.uid;
+      }
+
+      // Expenses Collection
+      match /expenses/{expenseId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(expenseId);
+        allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(expenseId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'expenseDateMillis', 'category', 'description', 'amount',
+                           'relatedInvoiceId', 'relatedInvoiceNumber', 'notes', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'expenseDateMillis', 'category', 'description', 'amount',
+                           'relatedInvoiceId', 'relatedInvoiceNumber', 'notes', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidExpense(incoming()) &&
+                         isValidTimestampsOnCreate(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(expenseId) &&
+                         isValidExpense(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         (
+                           // Action: EditExpenseRecord
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'expenseDateMillis', 'category', 'description', 'amount',
+                             'relatedInvoiceId', 'relatedInvoiceNumber', 'notes', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(expenseId) && existing().userId == request.auth.uid;
+      }
+    }
+  }
+}

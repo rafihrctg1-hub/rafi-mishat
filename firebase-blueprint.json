@@ -1,0 +1,244 @@
+{
+  "entities": {
+    "BusinessSettings": {
+      "title": "BusinessSettings",
+      "description": "Per-user wholesale business configuration and invoice defaults.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "businessName": { "type": "string", "description": "Business display name in Bengali." },
+        "businessAddress": { "type": "string", "description": "Business market address." },
+        "businessPhone": { "type": "string", "description": "Business contact mobile number." },
+        "currencySymbol": { "type": "string", "description": "Currency symbol (৳)." },
+        "currencyCode": { "type": "string", "description": "Currency code (BDT)." },
+        "defaultCommissionRate": { "type": "number", "description": "Default commission percentage (0-100)." },
+        "commissionEnabled": { "type": "boolean", "description": "Whether commission is enabled by default." },
+        "invoicePrefix": { "type": "string", "description": "Prefix for auto-generated chalan numbers." },
+        "nextInvoiceSeq": { "type": "number", "description": "Next sequential invoice counter." },
+        "defaultPrintFormat": { "type": "string", "enum": ["A4", "THERMAL_80MM"], "description": "Default print paper layout." },
+        "logoPreset": { "type": "string", "description": "Selected logo emblem key." },
+        "dateFormatPattern": { "type": "string", "description": "Date formatting pattern." },
+        "useBengaliNumerals": { "type": "boolean", "description": "Format numbers in Bengali digits when true." },
+        "languagePref": { "type": "string", "enum": ["BN", "BN_EN"], "description": "Interface language preference." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp via FieldValue.serverTimestamp()." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp via FieldValue.serverTimestamp()." }
+      },
+      "required": [
+        "userId",
+        "businessName",
+        "businessAddress",
+        "businessPhone",
+        "currencySymbol",
+        "currencyCode",
+        "defaultCommissionRate",
+        "commissionEnabled",
+        "invoicePrefix",
+        "nextInvoiceSeq",
+        "defaultPrintFormat",
+        "logoPreset",
+        "dateFormatPattern",
+        "useBengaliNumerals",
+        "languagePref",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Vegetable wholesale product catalog entry.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "nameBn": { "type": "string", "description": "Product name in Bengali." },
+        "nameEn": { "type": "string", "description": "Optional English product name." },
+        "iconKey": { "type": "string", "description": "Vegetable icon identifier." },
+        "defaultUnit": { "type": "string", "description": "Default measurement unit (e.g., কেজি)." },
+        "defaultRate": { "type": "number", "description": "Default rate per unit in BDT." },
+        "notes": { "type": "string", "description": "Optional product notes." },
+        "isActive": { "type": "boolean", "description": "Active status in product selector." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp via FieldValue.serverTimestamp()." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp via FieldValue.serverTimestamp()." }
+      },
+      "required": [
+        "userId",
+        "nameBn",
+        "nameEn",
+        "iconKey",
+        "defaultUnit",
+        "defaultRate",
+        "notes",
+        "isActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Wholesale buyer / customer record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "name": { "type": "string", "description": "Customer name (নাম)." },
+        "phone": { "type": "string", "description": "Optional mobile number." },
+        "address": { "type": "string", "description": "Optional market/delivery address." },
+        "notes": { "type": "string", "description": "Optional customer notes." },
+        "isActive": { "type": "boolean", "description": "Active status." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp via FieldValue.serverTimestamp()." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp via FieldValue.serverTimestamp()." }
+      },
+      "required": [
+        "userId",
+        "name",
+        "phone",
+        "address",
+        "notes",
+        "isActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Vegetable wholesale invoice / delivery chalan header and financial totals.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Creator/Owner Firebase Auth UID." },
+        "invoiceNumber": { "type": "string", "description": "Unique generated invoice/chalan number." },
+        "customerId": { "type": "string", "description": "Optional customer ID (empty for walk-in)." },
+        "customerName": { "type": "string", "description": "Customer name snapshot." },
+        "customerPhone": { "type": "string", "description": "Customer mobile number snapshot." },
+        "deliveryAddress": { "type": "string", "description": "Optional delivery address." },
+        "invoiceDateMillis": { "type": "number", "description": "Invoice date/time in epoch milliseconds." },
+        "itemCount": { "type": "number", "description": "Total number of line items." },
+        "totalQuantity": { "type": "number", "description": "Total vegetable weight/quantity." },
+        "productSubtotal": { "type": "number", "description": "Sum of all line totals." },
+        "commissionEnabled": { "type": "boolean", "description": "Whether commission applies to this invoice." },
+        "commissionRate": { "type": "number", "description": "Historical commission rate snapshot (%)." },
+        "commissionAmount": { "type": "number", "description": "Calculated commission amount in BDT." },
+        "additionalCharges": { "type": "number", "description": "Manually entered extra invoice charges." },
+        "discount": { "type": "number", "description": "Manually entered invoice discount." },
+        "finalAmount": { "type": "number", "description": "Final invoice payable amount." },
+        "notes": { "type": "string", "description": "Optional chalan notes." },
+        "status": { "type": "string", "enum": ["SAVED", "PAID", "DUE"], "description": "Invoice status." },
+        "businessNameSnapshot": { "type": "string", "description": "Business name snapshot at creation." },
+        "businessAddressSnapshot": { "type": "string", "description": "Business address snapshot at creation." },
+        "businessPhoneSnapshot": { "type": "string", "description": "Business phone snapshot at creation." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp via FieldValue.serverTimestamp()." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp via FieldValue.serverTimestamp()." }
+      },
+      "required": [
+        "userId",
+        "invoiceNumber",
+        "customerId",
+        "customerName",
+        "customerPhone",
+        "deliveryAddress",
+        "invoiceDateMillis",
+        "itemCount",
+        "totalQuantity",
+        "productSubtotal",
+        "commissionEnabled",
+        "commissionRate",
+        "commissionAmount",
+        "additionalCharges",
+        "discount",
+        "finalAmount",
+        "notes",
+        "status",
+        "businessNameSnapshot",
+        "businessAddressSnapshot",
+        "businessPhoneSnapshot",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "InvoiceItem": {
+      "title": "InvoiceItem",
+      "description": "Individual vegetable product line on an invoice with rate and name snapshot.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "invoiceId": { "type": "string", "description": "Parent invoice document ID." },
+        "productId": { "type": "string", "description": "Optional catalog product ID." },
+        "productName": { "type": "string", "description": "Product name snapshot in Bengali." },
+        "quantity": { "type": "number", "description": "Quantity (supports decimals)." },
+        "unit": { "type": "string", "description": "Unit snapshot (e.g., কেজি)." },
+        "rate": { "type": "number", "description": "Rate per unit snapshot in BDT." },
+        "lineTotal": { "type": "number", "description": "Calculated Quantity * Rate." },
+        "sortOrder": { "type": "number", "description": "Line display order." },
+        "invoiceDateMillis": { "type": "number", "description": "Parent invoice date in epoch milliseconds." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp via FieldValue.serverTimestamp()." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp via FieldValue.serverTimestamp()." }
+      },
+      "required": [
+        "userId",
+        "invoiceId",
+        "productId",
+        "productName",
+        "quantity",
+        "unit",
+        "rate",
+        "lineTotal",
+        "sortOrder",
+        "invoiceDateMillis",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Manually recorded wholesale business expense.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "expenseDateMillis": { "type": "number", "description": "Expense date in epoch milliseconds." },
+        "category": { "type": "string", "enum": ["TRANSPORT", "LABOR", "LOADING", "MARKET", "PACKAGING", "OTHER"], "description": "Expense category." },
+        "description": { "type": "string", "description": "Expense description." },
+        "amount": { "type": "number", "description": "Expense amount in BDT (> 0)." },
+        "relatedInvoiceId": { "type": "string", "description": "Optional related invoice document ID." },
+        "relatedInvoiceNumber": { "type": "string", "description": "Optional related invoice number." },
+        "notes": { "type": "string", "description": "Optional notes." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp via FieldValue.serverTimestamp()." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp via FieldValue.serverTimestamp()." }
+      },
+      "required": [
+        "userId",
+        "expenseDateMillis",
+        "category",
+        "description",
+        "amount",
+        "relatedInvoiceId",
+        "relatedInvoiceNumber",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/BusinessSettings" },
+      "description": "User business settings and invoice numbering state."
+    },
+    "/users/{userId}/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "User vegetable wholesale product catalog."
+    },
+    "/users/{userId}/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "User wholesale customer directory."
+    },
+    "/users/{userId}/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/Invoice" },
+      "description": "User wholesale invoices and chalans."
+    },
+    "/users/{userId}/invoice_items/{itemId}": {
+      "schema": { "$ref": "#/entities/InvoiceItem" },
+      "description": "Individual product lines belonging to user invoices."
+    },
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "User manual business expenses."
+    }
+  }
+}

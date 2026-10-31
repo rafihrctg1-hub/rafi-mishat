@@ -1,0 +1,6 @@
+{
+  "name": "Khandaker Veg Invoice",
+  "description": "মেসার্স কর্ণফুলী ট্রেডার্স — Vegetable wholesale invoice, chalan, customer, expense, and reporting system in Bengali.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

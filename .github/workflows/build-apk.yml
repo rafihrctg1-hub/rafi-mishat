@@ -1,0 +1,80 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build Khandaker Veg Invoice APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+
+      - name: Prepare .env and signing keystore
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+          if [ ! -f debug.keystore ] && [ -f debug.keystore.base64 ]; then
+            tr -d '\n\r ' < debug.keystore.base64 | base64 -d > debug.keystore
+          elif [ ! -f debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Build Android APK
+        run: |
+          gradle :app:assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk Khandaker-Veg-Invoice.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Khandaker-Veg-Invoice-APK
+          path: Khandaker-Veg-Invoice.apk
+          if-no-files-found: error
+
+      - name: Publish Direct-Download APK in GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Khandaker Veg Invoice APK (Build #${{ github.run_number }})"
+          body: |
+            ### মেসার্স কর্ণফুলী ট্রেডার্স — Khandaker Veg Invoice
+            আপনার Android মোবাইলে সরাসরি ডাউনলোড ও ইনস্টল করতে নিচের **Assets** অংশ থেকে **`Khandaker-Veg-Invoice.apk`** ফাইলটিতে ট্যাপ করুন।
+          files: Khandaker-Veg-Invoice.apk
+          draft: false
+          prerelease: false

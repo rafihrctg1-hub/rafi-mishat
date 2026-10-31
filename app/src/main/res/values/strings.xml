@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Khandaker Veg Invoice</string>
+    <string name="business_default_name">মেসার্স কর্ণফুলী ট্রেডার্স</string>
+    <string name="sign_in_google">Google দিয়ে লগইন করুন (Sign in with Google)</string>
+    <string name="sign_out">লগআউট</string>
+    <string name="nav_dashboard">ড্যাশবোর্ড</string>
+    <string name="nav_new_invoice">নতুন চালান</string>
+    <string name="nav_invoices">চালান ইতিহাস</string>
+    <string name="nav_customers">কাস্টমার</string>
+    <string name="nav_products">পণ্য তালিকা</string>
+    <string name="nav_expenses">খরচ হিসাব</string>
+    <string name="nav_reports">রিপোর্ট</string>
+    <string name="nav_settings">সেটিংস</string>
+    <string name="btn_add_product_line">পণ্য যোগ করুন</string>
+    <string name="btn_save_invoice">চালান সংরক্ষণ করুন</string>
+    <string name="btn_print_invoice">প্রিন্ট করুন</string>
+    <string name="btn_save_pdf">PDF ডাউনলোড</string>
+    <string name="btn_share_pdf">শেয়ার করুন</string>
+    <string name="label_customer_name">নাম</string>
+    <string name="cd_back">ফিরে যান</string>
+    <string name="cd_menu">মেনু খুলুন</string>
+    <string name="cd_market_banner">মেসার্স কর্ণফুলী ট্রেডার্স সবজি পাইকারি বাজার ব্যানার</string>
+</resources>
